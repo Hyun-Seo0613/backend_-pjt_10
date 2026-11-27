@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block title %}도서 둘러보기 | ThRead 서점{% endblock title %}
+
+{% block content %}
+  <section class="store-hero shadow-sm p-4 p-md-5 mb-5">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-7 store-hero__copy">
+        <p class="store-eyebrow mb-3">ThRead Bookstore</p>
+        <h1 class="display-5 fw-bold lh-sm mb-3">오늘의 책장을<br>새롭게 채워보세요</h1>
+        <p class="lead text-white-50 mb-4">좋아하는 장르를 발견하고, 읽은 책의 기록을 나눠 보세요.</p>
+        <div class="d-flex flex-wrap gap-2">
+          <a href="#catalog" class="btn btn-light fw-semibold">책 둘러보기 <i class="bi bi-arrow-down-short ms-1"></i></a>
+          <a href="#popular-books" class="btn btn-outline-light">평점 높은 책</a>
+        </div>
+        <p class="small text-white-50 mt-4 mb-0">현재 {{ book_count }}권의 책을 만나볼 수 있어요.</p>
+      </div>
+      <div class="col-lg-5 d-none d-sm-block">
+        <div class="store-hero__visual" aria-hidden="true">
+          {% for book in featured_books|slice:":3" %}
+            {% if book.cover %}<img class="store-hero__book" src="{{ book.cover }}" alt="">{% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="popular-books" class="mb-5" aria-labelledby="popular-heading">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-end gap-2 mb-3">
+      <div>
+        <p class="store-eyebrow text-success mb-1">Readers' choice</p>
+        <h2 id="popular-heading" class="store-section-heading h3 mb-0">독자 평점이 높은 책</h2>
+      </div>
+      <span class="small text-secondary">등록된 독자 평점 기준</span>
+    </div>
+
+    <div class="store-featured-grid">
+      {% for book in featured_books %}
+        <article class="card store-book-card shadow-sm">
+          <a class="store-book-cover store-book-cover--small text-decoration-none" href="{% url 'books:detail' book.pk %}" aria-label="{{ book.title }} 상세 보기">
+            {% if book.cover %}
+              <img src="{{ book.cover }}" alt="{{ book.title }} 표지" loading="lazy">
+            {% else %}
+              <span class="text-secondary"><i class="bi bi-book fs-1"></i></span>
+            {% endif %}
+          </a>
+          <div class="store-book-body">
+            <p class="store-rating mb-2"><i class="bi bi-star-fill me-1"></i>{{ book.customer_review_rank|floatformat:"1" }} / 10</p>
+            <a class="store-book-title text-decoration-none mb-1" href="{% url 'books:detail' book.pk %}">{{ book.title }}</a>
+            <p class="store-book-author mb-0">{{ book.author }}</p>
+          </div>
+        </article>
+      {% empty %}
+        <p class="text-secondary">등록된 도서가 없습니다.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section id="catalog" aria-labelledby="catalog-heading">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-3">
+      <div>
+        <p class="store-eyebrow text-success mb-1">Browse the shelves</p>
+        <h2 id="catalog-heading" class="store-section-heading h3 mb-0">책 전체 보기</h2>
+      </div>
+      <div class="small text-secondary">총 <strong id="catalog-count">{{ book_count }}</strong>권</div>
+    </div>
+
+    <div class="category-shelf pb-3 mb-3">
+      <div id="category-filters" class="d-flex flex-nowrap gap-2 overflow-auto">
+        <button type="button" class="category-filter btn btn-success btn-sm flex-shrink-0" data-category="" aria-pressed="true">전체</button>
+        {% for category in categories %}
+          <button type="button" class="category-filter btn btn-outline-success btn-sm flex-shrink-0" data-category="{{ category.name }}" aria-pressed="false">{{ category.name }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <p id="filter-message" class="small text-secondary" role="status" aria-live="polite">{{ books|length }}권을 먼저 보여드려요. 더 많은 책은 아래 버튼으로 불러올 수 있습니다.</p>
+    <div class="store-book-grid mb-4" id="books-list">
+      {% for book in books %}
+        <article class="card store-book-card shadow-sm">
+          <a class="store-book-cover text-decoration-none" href="{% url 'books:detail' book.pk %}" aria-label="{{ book.title }} 상세 보기">
+            {% if book.cover %}
+              <img src="{{ book.cover }}" alt="{{ book.title }} 표지" loading="lazy">
+            {% else %}
+              <span class="text-secondary"><i class="bi bi-book fs-1"></i></span>
+            {% endif %}
+          </a>
+          <div class="store-book-body">
+            <span class="small text-success fw-semibold mb-2">{{ book.category.name }}</span>
+            <p class="store-rating mb-2"><i class="bi bi-star-fill me-1"></i>{{ book.customer_review_rank|floatformat:"1" }} / 10</p>
+            <a class="store-book-title text-decoration-none mb-1" href="{% url 'books:detail' book.pk %}">{{ book.title }}</a>
+            <p class="store-book-author mb-2">{{ book.author }} · {{ book.publisher }}</p>
+            <p class="store-book-summary mb-3">{{ book.description|truncatechars:120 }}</p>
+            <a href="{% url 'books:detail' book.pk %}" class="btn btn-outline-success btn-sm mt-auto">상세 정보</a>
+          </div>
+        </article>
+      {% empty %}
+        <p class="text-secondary">등록된 도서가 없습니다.</p>
+      {% endfor %}
+    </div>
+    <div class="text-center mb-5">
+      {% if has_more_books %}
+        <button id="load-more" type="button" class="btn btn-outline-success px-4" data-next-page="{{ next_page }}">책 더 보기 <i class="bi bi-chevron-down ms-1"></i></button>
+      {% endif %}
+    </div>
+  </section>
+{% endblock content %}
+
+{% block script %}
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    const categoryFilters = document.getElementById('category-filters');
+    const booksList = document.getElementById('books-list');
+    const catalogCount = document.getElementById('catalog-count');
+    const filterMessage = document.getElementById('filter-message');
+    const loadMoreButton = document.getElementById('load-more');
+    const filterCategoryUrl = "{% url 'books:filter_category' %}";
+    const bookDetailUrlTemplate = "{% url 'books:detail' 0 %}";
+    let currentRequestId = 0;
+    let currentController = null;
+    let activeCategory = '';
+    let nextPage = Number(loadMoreButton?.dataset.nextPage || 2);
+
+    function createBookCard(book) {
+      const card = document.createElement('article');
+      card.className = 'card store-book-card shadow-sm';
+      const detailUrl = bookDetailUrlTemplate.replace(/\/0\/$/, `/${book.id}/`);
+
+      const coverStage = document.createElement('a');
+      coverStage.className = 'store-book-cover text-decoration-none';
+      coverStage.href = detailUrl;
+      coverStage.setAttribute('aria-label', `${book.title} 상세 보기`);
+      if (book.cover) {
+        const cover = document.createElement('img');
+        cover.src = book.cover;
+        cover.alt = `${book.title} 표지`;
+        cover.loading = 'lazy';
+        coverStage.appendChild(cover);
+      } else {
+        const placeholder = document.createElement('span');
+        placeholder.className = 'text-secondary';
+        const icon = document.createElement('i');
+        icon.className = 'bi bi-book fs-1';
+        icon.setAttribute('aria-hidden', 'true');
+        placeholder.appendChild(icon);
+        coverStage.appendChild(placeholder);
+      }
+
+      const body = document.createElement('div');
+      body.className = 'store-book-body';
+      const category = document.createElement('span');
+      category.className = 'small text-success fw-semibold mb-2';
+      category.textContent = book.category;
+      const rating = document.createElement('p');
+      rating.className = 'store-rating mb-2';
+      rating.textContent = `★ ${Number(book.customer_review_rank).toFixed(1)} / 10`;
+      const title = document.createElement('a');
+      title.className = 'store-book-title text-decoration-none mb-1';
+      title.href = detailUrl;
+      title.textContent = book.title;
+      const author = document.createElement('p');
+      author.className = 'store-book-author mb-2';
+      author.textContent = `${book.author} · ${book.publisher}`;
+      const description = document.createElement('p');
+      description.className = 'store-book-summary mb-3';
+      description.textContent = book.description;
+      const detailLink = document.createElement('a');
+      detailLink.className = 'btn btn-outline-success btn-sm mt-auto';
+      detailLink.href = detailUrl;
+      detailLink.textContent = '상세 정보';
+
+      body.append(category, rating, title, author, description, detailLink);
+      card.append(coverStage, body);
+      return card;
+    }
+
+    function renderBooks(books, append = false) {
+      if (!append) booksList.replaceChildren();
+      if (books.length === 0 && !append) {
+        const emptyMessage = document.createElement('p');
+        emptyMessage.className = 'text-secondary py-4';
+        emptyMessage.textContent = '이 장르에는 아직 등록된 책이 없습니다.';
+        booksList.appendChild(emptyMessage);
+        return;
+      }
+      books.forEach((book) => booksList.appendChild(createBookCard(book)));
+    }
+
+    async function requestBooks(category, page, append) {
+      currentController?.abort();
+      currentController = new AbortController();
+      const requestId = ++currentRequestId;
+      if (loadMoreButton) loadMoreButton.disabled = true;
+      filterMessage.textContent = append ? '책을 더 불러오는 중입니다.' : '책 목록을 불러오는 중입니다.';
+
+      try {
+        const response = await axios.get(filterCategoryUrl, {
+          params: { category, page },
+          signal: currentController.signal,
+        });
+        if (requestId !== currentRequestId) return;
+
+        const data = response.data;
+        renderBooks(data.books, append);
+        catalogCount.textContent = data.total_count;
+        nextPage = data.next_page || null;
+        if (loadMoreButton) {
+          loadMoreButton.hidden = !data.has_next;
+          if (nextPage) loadMoreButton.dataset.nextPage = nextPage;
+        }
+        const shownCount = booksList.querySelectorAll('.store-book-card').length;
+        filterMessage.textContent = `${shownCount}권 표시 중 · 전체 ${data.total_count}권`;
+      } catch (error) {
+        if (requestId !== currentRequestId || axios.isCancel(error)) return;
+        filterMessage.textContent = '책 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
+      } finally {
+        if (requestId === currentRequestId && loadMoreButton) loadMoreButton.disabled = false;
+      }
+    }
+
+    categoryFilters.addEventListener('click', (event) => {
+      const button = event.target.closest('.category-filter');
+      if (!button) return;
+
+      categoryFilters.querySelectorAll('.category-filter').forEach((filterButton) => {
+        const isSelected = filterButton === button;
+        filterButton.classList.toggle('btn-success', isSelected);
+        filterButton.classList.toggle('btn-outline-success', !isSelected);
+        filterButton.setAttribute('aria-pressed', String(isSelected));
+      });
+      activeCategory = button.dataset.category;
+      requestBooks(activeCategory, 1, false);
+    });
+
+    loadMoreButton?.addEventListener('click', () => {
+      if (nextPage) requestBooks(activeCategory, nextPage, true);
+    });
+  </script>
+{% endblock script %}

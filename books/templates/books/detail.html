@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ book.title }} | ThRead 서점{% endblock title %}
+
+{% block content %}
+  <nav aria-label="현재 위치" class="small mb-3">
+    <a href="{% url 'books:index' %}" class="link-secondary">서점</a>
+    <span class="text-secondary mx-2">/</span>
+    <span class="text-secondary">{{ book.category.name }}</span>
+  </nav>
+
+  <section class="product-shell card border-0 shadow-sm p-3 p-md-4 p-lg-5 mb-5">
+    <div class="row g-4 g-lg-5 align-items-start">
+      <div class="col-9 col-sm-7 col-md-4 mx-auto">
+        <div class="product-cover-stage">
+          {% if book.cover %}
+            <img src="{{ book.cover }}" alt="{{ book.title }} 표지">
+          {% else %}
+            <i class="bi bi-book text-secondary display-2" aria-hidden="true"></i>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="col-md-8">
+        <span class="badge rounded-pill text-bg-light text-success mb-3">{{ book.category.name }}</span>
+        <h1 class="display-6 fw-bold mb-2">{{ book.title }}</h1>
+        {% if book.subTitle %}<p class="text-secondary mb-3">{{ book.subTitle }}</p>{% endif %}
+        <p class="fs-5 mb-3">{{ book.author }} <span class="text-secondary fs-6">지음</span></p>
+
+        <div class="store-rating fs-6 mb-4">
+          <i class="bi bi-star-fill me-1"></i>{{ book.customer_review_rank|floatformat:"1" }} <span class="text-secondary fw-normal">/ 10</span>
+        </div>
+
+        <dl class="row product-fact mb-4">
+          <div class="col-6 col-lg-4 mb-3">
+            <dt>출판사</dt><dd>{{ book.publisher }}</dd>
+          </div>
+          <div class="col-6 col-lg-4 mb-3">
+            <dt>출간일</dt><dd>{{ book.pub_date|date:"Y-m-d" }}</dd>
+          </div>
+          <div class="col-12 col-lg-4 mb-3">
+            <dt>ISBN</dt><dd class="text-break">{{ book.isbn }}</dd>
+          </div>
+        </dl>
+
+        <div class="d-flex flex-wrap gap-2">
+          <a href="#book-description" class="btn btn-outline-success">책 소개 보기</a>
+          {% if user.is_authenticated %}
+            <a href="{% url 'books:thread_create' book.pk %}" class="btn btn-success"><i class="bi bi-pencil-square me-1"></i>이 책의 독서 기록 쓰기</a>
+          {% else %}
+            <a href="{% url 'accounts:login' %}" class="btn btn-success">로그인하고 기록 쓰기</a>
+          {% endif %}
+        </div>
+        <small class="d-block text-secondary mt-4">도서 정보 제공: 알라딘 인터넷서점</small>
+      </div>
+    </div>
+  </section>
+
+  <section id="book-description" class="card border-0 shadow-sm p-4 p-lg-5 mb-5" aria-labelledby="description-heading">
+    <p class="store-eyebrow text-success mb-1">About this book</p>
+    <h2 id="description-heading" class="store-section-heading h3 mb-3">책 소개</h2>
+    <div class="book-description">{{ book.description|linebreaks }}</div>
+  </section>
+
+  <section class="card border-0 shadow-sm p-4 p-lg-5 mb-5" aria-labelledby="author-heading">
+    <div class="row g-4 align-items-center">
+      {% if book.author_photo %}
+        <div class="col-auto">
+          <img src="{{ book.author_photo }}" alt="{{ book.author }}" class="author-avatar">
+        </div>
+      {% endif %}
+      <div class="col">
+        <p class="store-eyebrow text-success mb-1">About the author</p>
+        <h2 id="author-heading" class="h3">{{ book.author }}</h2>
+        <div class="text-secondary">{{ book.author_info|linebreaks }}</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-5" aria-labelledby="recommendations-heading">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-end gap-2 mb-3">
+      <div>
+        <p class="store-eyebrow text-success mb-1">You may also like</p>
+        <h2 id="recommendations-heading" class="store-section-heading h3 mb-0">함께 읽기 좋은 책</h2>
+      </div>
+      {% if recommendation_mode == 'ai' %}
+        <span class="badge rounded-pill text-bg-success">AI 임베딩 유사도</span>
+      {% else %}
+        <span class="badge rounded-pill text-bg-light text-success">카테고리 기반 추천</span>
+      {% endif %}
+    </div>
+    {% if recommendations %}
+      <div class="row row-cols-2 row-cols-md-3 g-3 g-lg-4">
+        {% for recommended_book in recommendations %}
+          <div class="col">
+            <article class="card store-book-card h-100 shadow-sm">
+              <a class="store-book-cover store-book-cover--small text-decoration-none" href="{% url 'books:detail' recommended_book.pk %}">
+                {% if recommended_book.cover %}<img src="{{ recommended_book.cover }}" alt="{{ recommended_book.title }} 표지" loading="lazy">{% endif %}
+              </a>
+              <div class="card-body p-3">
+                <span class="small text-success fw-semibold">{{ recommended_book.category.name }}</span>
+                <h3 class="store-book-title mt-2">{{ recommended_book.title }}</h3>
+                <p class="store-book-author mb-2">{{ recommended_book.author }}</p>
+                <a class="btn btn-outline-success btn-sm" href="{% url 'books:detail' recommended_book.pk %}">상세 정보</a>
+              </div>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-secondary">아직 추천할 만한 다른 책이 없습니다.</p>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="threads-heading" class="mb-4">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-end gap-3 mb-3">
+      <div>
+        <p class="store-eyebrow text-success mb-1">Readers' notes</p>
+        <h2 id="threads-heading" class="store-section-heading h3 mb-0">독자들의 기록</h2>
+      </div>
+      {% if user.is_authenticated %}
+        <a href="{% url 'books:thread_create' book.pk %}" class="btn btn-success">독서 기록 쓰기</a>
+      {% endif %}
+    </div>
+
+    <div class="d-grid gap-3">
+      {% for thread in book.thread_set.all %}
+        <article class="card border-0 shadow-sm p-3 p-md-4">
+          <div class="d-flex flex-column flex-md-row justify-content-between gap-3">
+            <div>
+              <h3 class="h5 mb-1">
+                <a class="link-success link-underline-opacity-0 link-underline-opacity-75-hover" href="{% url 'books:thread_detail' book.pk thread.pk %}">{{ thread.title }}</a>
+              </h3>
+              <p class="text-secondary mb-2">{{ thread.content|truncatechars:180 }}</p>
+              <small class="text-secondary">
+                <a class="link-secondary" href="{% url 'accounts:profile' thread.user.username %}">{{ thread.user.username }}</a>
+                · {{ thread.created_at|date:"Y-m-d" }}
+              </small>
+            </div>
+            <span class="text-secondary text-nowrap"><i class="bi bi-heart-fill text-danger me-1"></i>{{ thread.likes.count }}</span>
+          </div>
+        </article>
+      {% empty %}
+        <div class="card border-0 p-4 text-center text-secondary">아직 등록된 독서 기록이 없습니다.</div>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock content %}

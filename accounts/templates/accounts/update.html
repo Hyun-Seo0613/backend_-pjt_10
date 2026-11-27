@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}회원정보 수정 | ThRead{% endblock title %}
+
+{% block content %}
+<section class="form-panel card border-0 shadow-sm p-4 p-lg-5">
+  <header class="mb-4">
+    <p class="text-uppercase text-success small fw-semibold mb-1">내 서재 설정</p>
+    <h1 class="h2">회원정보 수정</h1>
+  </header>
+  <form action="{% url 'accounts:update' %}" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <p>
+      {{ form.username.label_tag }}<br>
+      {{ form.username }}
+    </p>
+    <p>
+      {{ form.last_name.label_tag }}<br>
+      {{ form.last_name }}
+    </p>
+    <p>
+      {{ form.first_name.label_tag }}<br>
+      {{ form.first_name }}
+    </p>
+    <p>
+      {{ form.email.label_tag }}<br>
+      {{ form.email }}
+    </p>
+    <p>
+      {{ form.gender.label_tag }}<br>
+      {{ form.gender }}
+    </p>
+    <p>
+      {{ form.age.label_tag }}<br>
+      {{ form.age }}
+    </p>
+    <p>
+      {{ form.weekly_avg_reading_time.label_tag }}<br>
+      {{ form.weekly_avg_reading_time }}
+    </p>
+    <p>
+      {{ form.annual_reading_amount.label_tag }}<br>
+      {{ form.annual_reading_amount }}
+    </p>
+    <p>
+      {{ form.profile_img.label_tag }}<br>
+      {{ form.profile_img }}
+    </p>
+    <p>
+      {{ form.interested_genres.label_tag }}<br>
+      {{ form.interested_genres }}
+    </p>
+    <p>
+      <a href="{% url 'accounts:change_password' %}">비밀번호 변경</a>
+    </p>
+    <button type="submit" class="btn btn-success">변경사항 저장</button>
+  </form>
+</section>
+{% endblock content %}

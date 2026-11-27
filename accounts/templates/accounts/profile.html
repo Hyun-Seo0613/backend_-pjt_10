@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ person.username }} 프로필 | ThRead{% endblock title %}
+
+{% block content %}
+  <section class="card border-0 shadow-sm p-4 p-lg-5 mb-4">
+    <div class="row g-4 align-items-center">
+      <div class="col-auto">
+        {% if person.profile_img %}
+          <img src="{{ person.profile_img.url }}" alt="{{ person.username }} 프로필 사진" class="profile-avatar">
+        {% else %}
+          <div class="profile-avatar d-flex align-items-center justify-content-center text-success display-5 fw-bold" aria-hidden="true">{{ person.username|first|upper }}</div>
+        {% endif %}
+      </div>
+      <div class="col">
+        <p class="text-uppercase text-success small fw-semibold mb-1">독서 프로필</p>
+        <h1 class="h2 mb-1">{{ person.username }}님의 서재</h1>
+        <p class="text-secondary mb-0">{{ person.last_name }}{{ person.first_name }}</p>
+      </div>
+    </div>
+
+    <hr class="my-4">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div class="d-flex gap-4">
+        <p class="mb-0"><strong id="followers-count">{{ followers_count }}</strong><span class="text-secondary ms-1">팔로워</span></p>
+        <p class="mb-0"><strong id="followings-count">{{ followings_count }}</strong><span class="text-secondary ms-1">팔로잉</span></p>
+      </div>
+      {% if user.is_authenticated and user != person %}
+        <form id="follow-form" method="POST" action="{% url 'accounts:follow' person.pk %}">
+          {% csrf_token %}
+          <button
+            id="follow-button"
+            type="submit"
+            class="btn {% if is_following %}btn-outline-success{% else %}btn-success{% endif %}"
+            aria-pressed="{{ is_following|yesno:'true,false' }}"
+          >
+            {% if is_following %}팔로우 취소{% else %}팔로우{% endif %}
+          </button>
+        </form>
+      {% elif not user.is_authenticated %}
+        <a class="btn btn-outline-success" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">로그인하고 팔로우</a>
+      {% endif %}
+    </div>
+    <p id="follow-message" class="small text-danger mt-2 mb-0" role="status" aria-live="polite"></p>
+  </section>
+
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <section class="card border-0 shadow-sm p-4 h-100" aria-labelledby="profile-info-heading">
+        <h2 id="profile-info-heading" class="h4 mb-3">독서자 정보</h2>
+        <dl class="row mb-4">
+          <dt class="col-6 text-secondary">이메일</dt><dd class="col-6 text-break">{{ person.email|default:"비공개" }}</dd>
+          <dt class="col-6 text-secondary">성별</dt><dd class="col-6">{{ person.get_gender_display|default:"미입력" }}</dd>
+          <dt class="col-6 text-secondary">나이</dt><dd class="col-6">{% if person.age %}{{ person.age }}세{% else %}미입력{% endif %}</dd>
+          <dt class="col-6 text-secondary">주간 독서 시간</dt><dd class="col-6">{% if person.weekly_avg_reading_time %}{{ person.weekly_avg_reading_time }}시간{% else %}미입력{% endif %}</dd>
+          <dt class="col-6 text-secondary">연간 독서량</dt><dd class="col-6">{% if person.annual_reading_amount %}{{ person.annual_reading_amount }}권{% else %}미입력{% endif %}</dd>
+        </dl>
+
+        <h3 class="h5">관심 장르</h3>
+        <div class="d-flex flex-wrap gap-2">
+          {% for category in person.interested_genres.all %}
+            <span class="badge rounded-pill text-bg-light text-success">{{ category.name }}</span>
+          {% empty %}
+            <span class="text-secondary">등록된 관심 장르가 없습니다.</span>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <div class="col-lg-7">
+      <section class="card border-0 shadow-sm p-4" aria-labelledby="profile-threads-heading">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 id="profile-threads-heading" class="h4 mb-0">독서 기록</h2>
+          <span class="badge rounded-pill text-bg-light">{{ person.thread_set.count }}개</span>
+        </div>
+        <div class="list-group list-group-flush">
+          {% for thread in person.thread_set.all %}
+            <article class="list-group-item px-0 py-3">
+              <a class="h5 link-success link-underline-opacity-0 link-underline-opacity-75-hover" href="{% url 'books:thread_detail' thread.book.pk thread.pk %}">{{ thread.title }}</a>
+              <p class="text-secondary mb-2">{{ thread.content|truncatechars:140 }}</p>
+              <div class="d-flex justify-content-between small text-secondary">
+                <a class="link-secondary" href="{% url 'books:detail' thread.book.pk %}">{{ thread.book.title }}</a>
+                <span><i class="bi bi-heart-fill text-danger me-1"></i>{{ thread.likes.count }}</span>
+              </div>
+            </article>
+          {% empty %}
+            <p class="text-secondary mb-0">작성된 독서 기록이 없습니다.</p>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+  </div>
+{% endblock content %}
+
+{% block script %}
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  {% if user.is_authenticated and user != person %}
+    <script>
+      const followForm = document.getElementById('follow-form');
+      const followButton = document.getElementById('follow-button');
+      const followMessage = document.getElementById('follow-message');
+      const followersCount = document.getElementById('followers-count');
+      const followingsCount = document.getElementById('followings-count');
+
+      followForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        followButton.disabled = true;
+        followMessage.textContent = '';
+
+        try {
+          const csrfToken = followForm.querySelector('[name=csrfmiddlewaretoken]').value;
+          const response = await axios.post(followForm.action, {}, {
+            headers: { 'X-CSRFToken': csrfToken },
+          });
+          const data = response.data;
+
+          followersCount.textContent = data.followers_count;
+          followingsCount.textContent = data.followings_count;
+          followButton.textContent = data.is_following ? '팔로우 취소' : '팔로우';
+          followButton.classList.toggle('btn-success', !data.is_following);
+          followButton.classList.toggle('btn-outline-success', data.is_following);
+          followButton.setAttribute('aria-pressed', String(data.is_following));
+        } catch (error) {
+          followMessage.textContent = error.response?.data?.error || '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+        } finally {
+          followButton.disabled = false;
+        }
+      });
+    </script>
+  {% endif %}
+{% endblock script %}

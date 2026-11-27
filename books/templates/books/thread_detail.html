@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ thread.title }} | ThRead{% endblock title %}
+
+{% block content %}
+<div class="py-2">
+  {% if thread.cover_img %}
+  <div class="mb-4">
+    <img src="{{ thread.cover_img.url }}" alt="{{ thread.title }} 표지 이미지" class="img-fluid w-100 rounded-4 shadow-sm">
+  </div>
+  {% endif %}
+
+  <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4">
+    <div>
+      <p class="text-uppercase text-success small fw-semibold mb-1">독서 기록</p>
+      <h1 class="display-6 fw-bold mb-0">{{ thread.title }}</h1>
+    </div>
+    <div class="d-flex gap-2">
+      {% if thread.user == user %}
+        <a href="{% url 'books:thread_update' book.pk thread.pk %}" class="btn btn-outline-success">수정</a>
+        <form action="{% url 'books:thread_delete' book.pk thread.pk %}" method="POST" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-danger">삭제</button>
+        </form>
+      {% endif %}
+    </div>
+  </header>
+  
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <a class="badge rounded-pill text-bg-light text-success text-decoration-none p-2" href="{% url 'books:detail' book.pk %}">{{ book.title }}</a>
+    <a class="badge rounded-pill text-bg-light text-success text-decoration-none p-2" href="{% url 'accounts:profile' thread.user.username %}">{{ thread.user.username }}</a>
+    <span class="badge rounded-pill text-bg-light text-secondary p-2">독서일 {{ thread.reading_date|date:"Y-m-d" }}</span>
+  </div>
+  
+  <article class="card border-0 shadow-sm p-4 p-lg-5 mb-4">
+    <div class="thread-body fs-5">{{ thread.content|linebreaksbr }}</div>
+    <small class="text-secondary mt-4">작성 {{ thread.created_at|date:"Y-m-d H:i" }} · 수정 {{ thread.updated_at|date:"Y-m-d H:i" }}</small>
+  </article>
+
+  <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+    <form id="like-form" method="POST" action="{% url 'books:likes' book.pk thread.pk %}">
+      {% csrf_token %}
+      <button
+        id="like-button"
+        type="submit"
+        class="btn {% if is_liked %}btn-danger{% else %}btn-outline-danger{% endif %}"
+        aria-pressed="{{ is_liked|yesno:'true,false' }}"
+      >
+        <i class="bi bi-heart-fill me-1" aria-hidden="true"></i>
+        <span id="like-label">{% if is_liked %}좋아요 취소{% else %}좋아요{% endif %}</span>
+        <span class="ms-1">(<span id="likes-count">{{ likes_count }}</span>)</span>
+      </button>
+    </form>
+    <p id="like-message" class="small text-danger mb-0" role="status" aria-live="polite"></p>
+  </div>
+
+  <section class="card border-0 shadow-sm p-4 p-lg-5" aria-labelledby="comments-heading">
+    <h2 id="comments-heading" class="h3 mb-3">댓글</h2>
+    <div class="mb-4" id="comment-list">
+      {% for comment in thread.comments.all %}
+        <div id="comment-{{ comment.pk }}" class="comment-item d-flex flex-column flex-md-row align-items-md-baseline gap-2 border-bottom py-3">
+          <p class="comment-content mb-0 flex-grow-1">{{ comment.content }}</p>
+          <small class="text-secondary">
+            <a href="{% url 'accounts:profile' comment.user.username %}" class="link-success">{{ comment.user.username }}</a>
+            <time datetime="{{ comment.created_at|date:'c' }}">{{ comment.created_at|date:'Y-m-d H:i' }}</time>
+          </small>
+          {% if comment.user == user %}
+            <button
+              class="delete-comment-btn btn btn-sm btn-outline-secondary"
+              type="button"
+              data-comment-id="{{ comment.pk }}"
+              data-url="{% url 'books:delete_comment' book.pk comment.pk %}"
+            >삭제</button>
+          {% endif %}
+        </div>
+      {% empty %}
+        <p id="no-comments" class="text-secondary">작성된 댓글이 없습니다.</p>
+      {% endfor %}
+    </div>
+
+    <h3 class="h5">댓글 남기기</h3>
+    <form id="comment-form" method="POST" action="{% url 'books:create_comment' book.pk thread.pk %}">
+      {% csrf_token %}
+      <div class="mb-2">
+        {{ comment_form.content }}
+      </div>
+      <button id="comment-submit" type="submit" class="btn btn-success">댓글 등록</button>
+    </form>
+    <p id="comment-message" class="small mt-2" role="status" aria-live="polite"></p>
+  </section>
+
+  <div class="mt-4">
+    <a href="{% url 'books:detail' thread.book.pk %}" class="btn btn-outline-secondary">책 상세로 돌아가기</a>
+  </div>
+</div>
+{% endblock content %}
+
+{% block script %}
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    const likeForm = document.getElementById('like-form');
+    const likeButton = document.getElementById('like-button');
+    const likeLabel = document.getElementById('like-label');
+    const likesCount = document.getElementById('likes-count');
+    const likeMessage = document.getElementById('like-message');
+    const commentForm = document.getElementById('comment-form');
+    const commentList = document.getElementById('comment-list');
+    const commentSubmit = document.getElementById('comment-submit');
+    const commentInput = commentForm.querySelector('textarea, input[name="content"]');
+    const commentMessage = document.getElementById('comment-message');
+
+    function csrfHeaders(form) {
+      const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+      return { 'X-CSRFToken': csrfToken };
+    }
+
+    function showNoCommentsIfNeeded() {
+      if (!commentList.querySelector('.comment-item')) {
+        const emptyMessage = document.createElement('p');
+        emptyMessage.id = 'no-comments';
+        emptyMessage.className = 'text-secondary';
+        emptyMessage.textContent = '작성된 댓글이 없습니다.';
+        commentList.appendChild(emptyMessage);
+      }
+    }
+
+    function appendComment(comment) {
+      document.getElementById('no-comments')?.remove();
+
+      const row = document.createElement('div');
+      row.id = `comment-${comment.id}`;
+      row.className = 'comment-item d-flex flex-column flex-md-row align-items-md-baseline gap-2 border-bottom py-2';
+
+      const content = document.createElement('p');
+      content.className = 'comment-content mb-0';
+      content.textContent = comment.content;
+
+      const metadata = document.createElement('small');
+      const profileLink = document.createElement('a');
+      profileLink.href = comment.profile_url;
+      profileLink.textContent = comment.username;
+      const createdAt = document.createElement('time');
+      createdAt.dateTime = comment.created_at;
+      createdAt.textContent = new Date(comment.created_at).toLocaleString('ko-KR');
+      metadata.append(profileLink, document.createTextNode(' '), createdAt);
+
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'delete-comment-btn btn btn-sm btn-outline-secondary';
+      deleteButton.type = 'button';
+      deleteButton.dataset.commentId = comment.id;
+      deleteButton.dataset.url = comment.delete_url;
+      deleteButton.textContent = '삭제';
+
+      row.append(content, metadata, deleteButton);
+      commentList.appendChild(row);
+    }
+
+    likeForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      likeButton.disabled = true;
+      likeMessage.textContent = '';
+
+      try {
+        const response = await axios.post(likeForm.action, {}, {
+          headers: csrfHeaders(likeForm),
+        });
+        const data = response.data;
+
+        likesCount.textContent = data.likes_count;
+        likeLabel.textContent = data.is_liked ? '좋아요 취소' : '좋아요';
+        likeButton.classList.toggle('btn-danger', data.is_liked);
+        likeButton.classList.toggle('btn-outline-danger', !data.is_liked);
+        likeButton.setAttribute('aria-pressed', String(data.is_liked));
+      } catch (error) {
+        likeMessage.textContent = error.response?.data?.error || '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+      } finally {
+        likeButton.disabled = false;
+      }
+    });
+
+    commentForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      commentSubmit.disabled = true;
+      commentMessage.className = 'small mt-2 text-danger';
+      commentMessage.textContent = '';
+
+      try {
+        const response = await axios.post(commentForm.action, new FormData(commentForm), {
+          headers: csrfHeaders(commentForm),
+        });
+        appendComment(response.data);
+        commentInput.value = '';
+        commentMessage.className = 'small mt-2 text-success';
+        commentMessage.textContent = '댓글을 등록했습니다.';
+      } catch (error) {
+        commentMessage.textContent = error.response?.data?.error || '댓글 등록에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+      } finally {
+        commentSubmit.disabled = false;
+      }
+    });
+
+    // 새 댓글과 기존 댓글 모두 같은 이벤트 위임 처리기로 삭제한다.
+    commentList.addEventListener('click', async (event) => {
+      const deleteButton = event.target.closest('.delete-comment-btn');
+      if (!deleteButton) return;
+
+      deleteButton.disabled = true;
+      commentMessage.className = 'small mt-2 text-danger';
+      commentMessage.textContent = '';
+      try {
+        await axios.post(deleteButton.dataset.url, {}, {
+          headers: csrfHeaders(commentForm),
+        });
+        document.getElementById(`comment-${deleteButton.dataset.commentId}`)?.remove();
+        showNoCommentsIfNeeded();
+        commentMessage.className = 'small mt-2 text-success';
+        commentMessage.textContent = '댓글을 삭제했습니다.';
+      } catch (error) {
+        deleteButton.disabled = false;
+        commentMessage.textContent = error.response?.data?.error || '댓글 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+      }
+    });
+  </script>
+{% endblock script %}
+

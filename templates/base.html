@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <title>{% block title %}ThRead | 온라인 서재{% endblock title %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    :root {
+      --forest: #174638;
+      --forest-dark: #10372d;
+      --leaf: #e5eee7;
+      --paper: #f5f6f4;
+      --sand: #e9e1d2;
+      --ink: #27352e;
+      --muted-ink: #69766e;
+      --line: #e2e8e3;
+      --accent: #bd563d;
+    }
+
+    body {
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: "Pretendard", "Noto Sans KR", system-ui, -apple-system, sans-serif;
+    }
+
+    .site-nav { background: #fff; border-bottom: 1px solid var(--line); }
+    .navbar-brand { color: var(--forest); font-size: 1.45rem; font-weight: 800; letter-spacing: -.04em; }
+    .navbar-brand span { color: var(--accent); }
+    .site-nav .nav-link { color: var(--ink); font-weight: 600; }
+    .site-nav .nav-link:hover, .site-nav .nav-link:focus { color: var(--forest); }
+    .site-nav .btn-link { color: var(--ink); text-decoration: none; }
+    .site-nav .btn-link:hover { color: var(--forest); }
+
+    main { min-height: 76vh; }
+    .text-secondary { color: var(--muted-ink) !important; }
+    .text-success { color: var(--forest) !important; }
+    .btn-success {
+      --bs-btn-bg: var(--forest);
+      --bs-btn-border-color: var(--forest);
+      --bs-btn-hover-bg: var(--forest-dark);
+      --bs-btn-hover-border-color: var(--forest-dark);
+      --bs-btn-active-bg: var(--forest-dark);
+      --bs-btn-active-border-color: var(--forest-dark);
+    }
+    .btn-outline-success {
+      --bs-btn-color: var(--forest);
+      --bs-btn-border-color: #8ba99a;
+      --bs-btn-hover-bg: var(--forest);
+      --bs-btn-hover-border-color: var(--forest);
+    }
+
+    .card {
+      border-color: var(--line);
+      border-radius: .9rem;
+    }
+    .store-hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 330px;
+      border-radius: 1.25rem;
+      color: #fff;
+      background: radial-gradient(circle at 80% 15%, rgba(219, 231, 212, .2), transparent 28%), linear-gradient(120deg, #123f33, #285b45 68%, #46765a);
+    }
+    .store-hero::after { content: ""; position: absolute; width: 360px; height: 360px; border: 1px solid rgba(255,255,255,.12); border-radius: 50%; right: 9%; top: -48%; }
+    .store-hero__copy { position: relative; z-index: 1; max-width: 560px; }
+    .store-hero__visual { position: relative; z-index: 1; height: 270px; min-width: 300px; }
+    .store-hero__book { position: absolute; top: 18px; width: 145px; height: 225px; padding: 8px; border-radius: .3rem; background: rgba(255,255,255,.94); box-shadow: 0 1.2rem 2.5rem rgba(0,0,0,.28); object-fit: contain; }
+    .store-hero__book:nth-child(1) { right: 45%; top: 38px; transform: rotate(-11deg); }
+    .store-hero__book:nth-child(2) { right: 24%; top: 12px; transform: rotate(3deg); }
+    .store-hero__book:nth-child(3) { right: 3%; top: 39px; transform: rotate(11deg); }
+    .store-eyebrow { color: #a8c7ad; font-size: .78rem; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; }
+    .store-section-heading { color: var(--forest-dark); font-weight: 800; letter-spacing: -.03em; }
+    .store-book-card { overflow: hidden; border: 1px solid var(--line); background: #fff; transition: transform .18s ease, box-shadow .18s ease; }
+    .store-book-card:hover { transform: translateY(-4px); box-shadow: 0 1rem 2rem rgba(29, 52, 39, .12) !important; }
+    .store-featured-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; }
+    .store-book-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; }
+    .store-book-card { min-width: 0; }
+    .store-book-body { display: flex; flex-direction: column; min-width: 0; padding: .85rem; }
+    .store-book-cover { position: relative; display: flex; align-items: center; justify-content: center; height: 270px; padding: 1.1rem; background: #f1f0eb; }
+    .store-book-cover img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 .5rem .45rem rgba(0,0,0,.16)); }
+    .store-book-cover--small { height: 215px; }
+    .store-book-title { display: -webkit-box; overflow: hidden; color: var(--forest-dark); font-size: 1rem; font-weight: 750; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .store-book-author { color: var(--muted-ink); font-size: .88rem; }
+    .store-book-summary { display: -webkit-box; overflow: hidden; color: var(--muted-ink); font-size: .88rem; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+    .store-rating { color: #a66b18; font-size: .82rem; font-weight: 750; }
+    .category-shelf { border-bottom: 1px solid var(--line); }
+    .product-shell { background: #fff; }
+    .product-cover-stage { display: flex; align-items: center; justify-content: center; min-height: 420px; aspect-ratio: 2 / 3; padding: 1.25rem; background: #f1f0eb; border-radius: .75rem; }
+    .product-cover-stage img { width: 100%; height: 100%; max-height: 560px; object-fit: contain; filter: drop-shadow(0 .75rem .7rem rgba(0,0,0,.17)); }
+    .product-fact { border-top: 1px solid var(--line); padding: .9rem 0; }
+    .product-fact dt { color: var(--muted-ink); font-size: .82rem; font-weight: 500; }
+    .product-fact dd { margin: .2rem 0 0; font-weight: 700; }
+    .book-card { overflow: hidden; transition: transform .18s ease, box-shadow .18s ease; }
+    .book-card:hover { transform: translateY(-3px); box-shadow: 0 1rem 2rem rgba(29, 52, 39, .1) !important; }
+    .book-card img { height: 300px; object-fit: cover; background: var(--sand); }
+    .book-card .card-title { color: var(--forest-dark); font-weight: 700; }
+    .book-card .card-text { color: var(--muted-ink); line-height: 1.65; }
+    .recommendation-card { overflow: hidden; }
+    .recommendation-card img { width: 100%; height: 190px; object-fit: cover; background: var(--sand); }
+    .book-cover-frame { background: var(--sand); border-radius: 1rem; overflow: hidden; }
+    .book-cover-frame img { display: block; width: 100%; max-height: 560px; object-fit: cover; }
+    .author-avatar { width: 7rem; height: 7rem; object-fit: cover; border-radius: 50%; }
+    .thread-body { white-space: normal; line-height: 1.85; overflow-wrap: anywhere; }
+    .profile-avatar { width: 9rem; height: 9rem; object-fit: cover; border-radius: 50%; background: var(--leaf); }
+    .form-panel { max-width: 760px; margin-inline: auto; }
+    .form-panel--narrow { max-width: 520px; }
+    .errorlist { color: #a33d36; padding-left: 1.2rem; }
+    .helptext { display: block; margin-top: .35rem; color: var(--muted-ink); font-size: .875rem; }
+
+    form p { margin-bottom: 1rem; }
+    form label { display: inline-block; margin-bottom: .4rem; font-weight: 600; }
+    input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]),
+    textarea, select {
+      max-width: 100%;
+      border: 1px solid #cbd4cc;
+      border-radius: .55rem;
+      padding: .55rem .75rem;
+      background: #fff;
+    }
+    input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]),
+    textarea, select { width: 100%; }
+    input[type="checkbox"], input[type="radio"] { width: auto; margin-right: .4rem; }
+    .site-footer { color: rgba(255,255,255,.76); background: var(--forest-dark); }
+
+    @media (max-width: 575.98px) {
+      .book-card img { height: 260px; }
+      .profile-avatar { width: 6.5rem; height: 6.5rem; }
+      .store-hero { min-height: 0; }
+      .store-hero__visual { height: 190px; min-width: 0; margin-top: 1.5rem; }
+      .store-hero__book { width: 105px; height: 160px; }
+      .store-book-cover { height: 220px; }
+      .product-cover-stage { min-height: 300px; }
+    }
+    @media (min-width: 576px) {
+      .store-book-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .store-featured-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    @media (min-width: 768px) {
+      .store-book-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    @media (min-width: 1200px) {
+      .store-book-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1.1rem; }
+    }
+    @media (min-width: 1500px) {
+      .store-book-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg site-nav sticky-top">
+    <div class="container">
+      <a class="navbar-brand" href="{% url 'books:index' %}"><i class="bi bi-book-half me-1" aria-hidden="true"></i>Th<span>Read</span></a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="메뉴 열기">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+          <li class="nav-item"><a class="nav-link" href="{% url 'books:index' %}">도서 둘러보기</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'books:index' %}#popular-books">베스트셀러</a></li>
+          {% if request.user.is_authenticated %}
+            <li class="nav-item"><a class="nav-link" href="{% url 'accounts:profile' user.username %}">내 프로필</a></li>
+            <li class="nav-item">
+              <form action="{% url 'accounts:logout' %}" method="POST" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-link nav-link" type="submit">로그아웃</button>
+              </form>
+            </li>
+          {% else %}
+            <li class="nav-item"><a class="nav-link" href="{% url 'accounts:login' %}">로그인</a></li>
+            <li class="nav-item"><a class="btn btn-success btn-sm ms-lg-2" href="{% url 'accounts:signup' %}">회원가입</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4 py-lg-5">
+    {% block content %}{% endblock content %}
+  </main>
+
+  <footer class="site-footer py-4 mt-5">
+    <div class="container small">ThRead · 오늘 읽은 책을 기록하고 나누는 온라인 서재</div>
+  </footer>
+
+  {% block script %}{% endblock script %}
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
+</body>
+</html>

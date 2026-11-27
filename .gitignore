@@ -1,0 +1,27 @@
+# Local secrets and environment configuration
+.env
+.env.*
+!.env.sample
+
+# Python virtual environments
+venv/
+.venv/
+
+# Python cache and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local Django data and uploaded files
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Editor and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
